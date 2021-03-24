@@ -8,9 +8,9 @@ namespace WorldTrackerDomain.Queries
 {
     public class PlaceGetAllQueryHandler : IRequestHandler<PlaceGetAllQuery, PlaceGetAllView>
     {
-        private readonly IDomainViewReaderRepository _domainViewRepository;
+        private readonly IDomainViewRepository _domainViewRepository;
 
-        public PlaceGetAllQueryHandler(IDomainViewReaderRepository domainViewRepository)
+        public PlaceGetAllQueryHandler(IDomainViewRepository domainViewRepository)
         {
             _domainViewRepository = domainViewRepository;
         }

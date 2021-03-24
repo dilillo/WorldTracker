@@ -1,22 +1,36 @@
 ﻿using Microsoft.Azure.Cosmos;
-using System;
+using Microsoft.Extensions.Options;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using WorldTrackerDomain.Configuration;
 using WorldTrackerDomain.Views;
 
-namespace WorldTrackerProjector.Repositories
+namespace WorldTrackerDomain.Repositories
 {
-    public class DomainViewWriterRepository
+    public interface IDomainViewRepository
+    {
+        Task Delete(DomainView view, CancellationToken cancellationToken);
+
+        Task<DomainView> GetByID(string viewID, CancellationToken cancellationToken);
+
+        Task Save(DomainView view, CancellationToken cancellationToken);
+    }
+
+    public class DomainViewRepository : IDomainViewRepository
     {
         private const string ContainerID = "views";
         private const string CatabaseID = "worldtracker";
 
-        private readonly string _connectionString;
+        protected string _connectionString;
 
-        public DomainViewWriterRepository()
+        protected DomainViewRepository()
         {
-            _connectionString = Environment.GetEnvironmentVariable("WorldTrackerOptions:CosmosDBConnectionString");
+        }
+
+        public DomainViewRepository(IOptions<WorldTrackerOptions> worldTrackerOptions) : this()
+        {
+            _connectionString = worldTrackerOptions.Value.CosmosDBConnectionString;
         }
 
         public async Task<DomainView> GetByID(string viewID, CancellationToken cancellationToken)

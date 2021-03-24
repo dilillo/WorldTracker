@@ -1,12 +1,7 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http.Features;
-using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,6 +9,7 @@ using Microsoft.Extensions.Hosting;
 using WorldTrackerDomain.Aggregates;
 using WorldTrackerDomain.Commands;
 using WorldTrackerDomain.Configuration;
+using WorldTrackerDomain.Projectors;
 using WorldTrackerDomain.Repositories;
 using WorldTrackerWeb.Components;
 
@@ -57,10 +53,7 @@ namespace WorldTrackerWeb
                 options.MultipartHeadersLengthLimit = MaxRequestSize;
             });
 
-            services.AddControllersWithViews()
-                .AddSessionStateTempDataProvider();
-
-            services.AddSession();
+            services.AddControllersWithViews();
 
             services.AddOptions();
 
@@ -68,7 +61,9 @@ namespace WorldTrackerWeb
 
             services.AddTransient<IBlobUploader, BlobUploader>();
             services.AddTransient<IDomainEventRepository, DomainEventRepository>();
-            services.AddTransient<IDomainViewReaderRepository, DomainViewReaderRepository>();
+            services.AddTransient<IDomainViewRepository, DomainViewRepository>();
+            services.AddTransient<IPersonGetByIDViewProjector, PersonGetByIDViewProjector>();
+            services.AddTransient<IPlaceGetByIDViewProjector, PlaceGetByIDViewProjector>();
             services.AddTransient<IPersonAggregate, PersonAggregate>();
             services.AddTransient<IPlaceAggregate, PlaceAggregate>();
         }
@@ -86,14 +81,11 @@ namespace WorldTrackerWeb
                 // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
+
             app.UseHttpsRedirection();
             app.UseStaticFiles();
 
             app.UseRouting();
-
-            app.UseAuthorization();
-
-            app.UseSession();
 
             app.UseEndpoints(endpoints =>
             {

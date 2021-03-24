@@ -1,9 +1,8 @@
 ﻿using MediatR;
-using WorldTrackerDomain.Views;
 
 namespace WorldTrackerDomain.Queries
 {
-    public class PersonGetByIDQuery : IRequest<PersonGetByIDView>
+    public class PersonGetByIDQuery : IRequest<PersonGetByIDQueryResult>
     {
         public string ID { get; set; }
     }

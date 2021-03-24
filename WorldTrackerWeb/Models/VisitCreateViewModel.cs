@@ -7,5 +7,6 @@ namespace WorldTrackerWeb.Models
 {
     public class VisitViewModel
     {
+
     }
 }

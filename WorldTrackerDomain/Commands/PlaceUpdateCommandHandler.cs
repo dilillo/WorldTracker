@@ -6,22 +6,22 @@ using WorldTrackerDomain.Projectors;
 
 namespace WorldTrackerDomain.Commands
 {
-    public class PlaceCreateCommandHandler : IRequestHandler<PlaceCreateCommand>
+    public class PlaceUpdateCommandHandler : IRequestHandler<PlaceUpdateCommand>
     {
         private readonly IPlaceAggregate _placeAggregate;
         private readonly IPlaceGetByIDViewProjector _placeGetByIDViewProjector;
 
-        public PlaceCreateCommandHandler(IPlaceAggregate placeAggregate, IPlaceGetByIDViewProjector placeGetByIDViewProjector)
+        public PlaceUpdateCommandHandler(IPlaceAggregate placeAggregate, IPlaceGetByIDViewProjector placeGetByIDViewProjector)
         {
             _placeAggregate = placeAggregate;
             _placeGetByIDViewProjector = placeGetByIDViewProjector;
         }
 
-        public async Task<Unit> Handle(PlaceCreateCommand request, CancellationToken cancellationToken)
+        public async Task<Unit> Handle(PlaceUpdateCommand request, CancellationToken cancellationToken)
         {
             await _placeAggregate.Load(request.ID, cancellationToken);
 
-            await _placeAggregate.Create(request.Name, request.PictureUrl, cancellationToken);
+            await _placeAggregate.Update(request.Name, cancellationToken);
 
             var events = await _placeAggregate.SaveChanges(cancellationToken);
 

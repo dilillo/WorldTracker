@@ -8,9 +8,9 @@ namespace WorldTrackerDomain.Queries
 {
     public class SummaryQueryHandler : IRequestHandler<SummaryQuery, SummaryView>
     {
-        private readonly IDomainViewReaderRepository _domainViewRepository;
+        private readonly IDomainViewRepository _domainViewRepository;
 
-        public SummaryQueryHandler(IDomainViewReaderRepository domainViewRepository)
+        public SummaryQueryHandler(IDomainViewRepository domainViewRepository)
         {
             _domainViewRepository = domainViewRepository;
         }

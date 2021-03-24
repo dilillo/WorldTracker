@@ -1,4 +1,4 @@
-﻿@model WorldTrackerDomain.Views.PersonGetByIDViewPerson
+﻿@model WorldTrackerDomain.Queries.PersonGetByIDQueryResult
 
 @{
     ViewData["Title"] = "Person Details";
@@ -8,21 +8,51 @@
 
 <div>
     <dl class="row">
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Name)
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.PersonGetByIDView.Person.Name)
         </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Name)
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.PersonGetByIDView.Person.Name)
         </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.PictureUrl)
+        <dt class="col-sm-2">
+            Picture
         </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.PictureUrl)
+        <dd class="col-sm-10">
+            <img src="@Model.PersonGetByIDView.Person.PictureUrl" alt="@Model.PersonGetByIDView.Person.Name" style="max-height:50px;max-width:50px" />
+        </dd>
+        <dt class="col-sm-2">
+            Events
+        </dt>
+        <dd class="col-sm-10">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>
+                            Datetime
+                        </th>
+                        <th>
+                            Type
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.Events)
+                    {
+                        <tr>
+                            <td>
+                                @Html.DisplayFor(modelItem => item.FiredAtDateTimeUtc)
+                            </td>
+                            <td>
+                                @Html.DisplayFor(modelItem => item.GetType().Name)
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
         </dd>
     </dl>
 </div>
 <div>
-    @Html.ActionLink("Edit", "Edit", new {  id = Model.ID }) |
+    @Html.ActionLink("Edit", "Edit", new {  id = Model.PersonGetByIDView.Person.ID }) |
     <a asp-action="Index">Back to List</a>
 </div>

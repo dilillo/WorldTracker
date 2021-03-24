@@ -19,7 +19,7 @@ namespace WorldTrackerDomain.Aggregates
 
         Task Delete(CancellationToken cancellationToken);
 
-        Task Update(string name, string pictureUrl, CancellationToken cancellationToken);
+        Task Update(string name, CancellationToken cancellationToken);
 
         Task Visit(string personID, CancellationToken cancellationToken);
     }
@@ -53,12 +53,11 @@ namespace WorldTrackerDomain.Aggregates
             return Task.CompletedTask;
         }
 
-        public Task Update(string name, string pictureUrl, CancellationToken cancellationToken)
+        public Task Update(string name, CancellationToken cancellationToken)
         {
             var @event = DomainEventFactory.Build<PlaceUpdatedEvent>(AggregateID, Version + 1, i =>
             {
                 i.Name = name;
-                i.PictureUrl = pictureUrl;
             });
 
             Mutate(@event);
@@ -109,7 +108,6 @@ namespace WorldTrackerDomain.Aggregates
                 case PlaceUpdatedEvent PlaceUpdatedEvent:
 
                     Name = PlaceUpdatedEvent.Name;
-                    PictureUrl = PlaceUpdatedEvent.PictureUrl;
 
                     break;
 

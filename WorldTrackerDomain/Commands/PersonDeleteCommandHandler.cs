@@ -6,22 +6,22 @@ using WorldTrackerDomain.Projectors;
 
 namespace WorldTrackerDomain.Commands
 {
-    public class PersonCreateCommandHandler : IRequestHandler<PersonCreateCommand>
+    public class PersonDeleteCommandHandler : IRequestHandler<PersonDeleteCommand>
     {
         private readonly IPersonAggregate _personAggregate;
         private readonly IPersonGetByIDViewProjector _personGetByIDViewProjector;
 
-        public PersonCreateCommandHandler(IPersonAggregate personAggregate, IPersonGetByIDViewProjector personGetByIDViewProjector)
+        public PersonDeleteCommandHandler(IPersonAggregate personAggregate, IPersonGetByIDViewProjector personGetByIDViewProjector)
         {
             _personAggregate = personAggregate;
             _personGetByIDViewProjector = personGetByIDViewProjector;
         }
 
-        public async Task<Unit> Handle(PersonCreateCommand request, CancellationToken cancellationToken)
+        public async Task<Unit> Handle(PersonDeleteCommand request, CancellationToken cancellationToken)
         {
             await _personAggregate.Load(request.ID, cancellationToken);
 
-            await _personAggregate.Create(request.Name, request.PictureUrl, cancellationToken);
+            await _personAggregate.Delete(cancellationToken);
 
             var events = await _personAggregate.SaveChanges(cancellationToken);
 
