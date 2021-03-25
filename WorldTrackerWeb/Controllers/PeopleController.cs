@@ -24,7 +24,7 @@ namespace WorldTrackerWeb.Controllers
         {
             var model = await _mediator.Send(new PersonGetAllQuery());
 
-            return View(model.People);
+            return View(model);
         }
 
         public async Task<ActionResult> Details(string id)
