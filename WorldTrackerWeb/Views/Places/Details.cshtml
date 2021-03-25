@@ -1,0 +1,58 @@
+﻿@model WorldTrackerDomain.Queries.PlaceGetByIDQueryResult
+
+@{
+    ViewData["Title"] = "Place Details";
+}
+
+<h1>Place Details</h1>
+
+<div>
+    <dl class="row">
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.PlaceGetByIDView.Place.Name)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.PlaceGetByIDView.Place.Name)
+        </dd>
+        <dt class="col-sm-2">
+            Picture
+        </dt>
+        <dd class="col-sm-10">
+            <img src="@Model.PlaceGetByIDView.Place.PictureUrl" alt="@Model.PlaceGetByIDView.Place.Name" style="max-height:50px;max-width:50px" />
+        </dd>
+        <dt class="col-sm-2">
+            Events
+        </dt>
+        <dd class="col-sm-10">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>
+                            Datetime
+                        </th>
+                        <th>
+                            Type
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.Events)
+                    {
+                        <tr>
+                            <td>
+                                @Html.DisplayFor(modelItem => item.FiredAtDateTimeUtc)
+                            </td>
+                            <td>
+                                @Html.DisplayFor(modelItem => item.GetType().Name)
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </dd>
+    </dl>
+</div>
+<div>
+    @Html.ActionLink("Edit", "Edit", new {  id = Model.PlaceGetByIDView.Place.ID }) |
+    <a asp-action="Index">Back to List</a>
+</div>

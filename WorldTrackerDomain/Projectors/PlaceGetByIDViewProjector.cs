@@ -86,7 +86,7 @@ namespace WorldTrackerDomain.Projectors
 
         private async Task CreatePlace(PlaceCreatedEvent placeCreatedEvent, CancellationToken cancellationToken)
         {
-            var placeGetByIDView = new PlaceGetByIDView(placeCreatedEvent.ID)
+            var placeGetByIDView = new PlaceGetByIDView(placeCreatedEvent.AggregateID)
             {
                 Place = new PlaceGetByIDViewPlace
                 {

@@ -1,26 +1,26 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
+using System.Diagnostics;
+using System.Threading.Tasks;
+using WorldTrackerDomain.Queries;
 using WorldTrackerWeb.Models;
 
 namespace WorldTrackerWeb.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly ILogger<HomeController> _logger;
+        private readonly IMediator _mediator;
 
-        public HomeController(ILogger<HomeController> logger)
+        public HomeController(IMediator mediator)
         {
-            _logger = logger;
+            _mediator = mediator;
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            return View();
+            var model = await _mediator.Send(new SummaryQuery());
+
+            return View(model);
         }
 
         public IActionResult Privacy()

@@ -1,10 +1,10 @@
-﻿@model WorldTrackerDomain.Views.PersonGetAllView
+﻿@model WorldTrackerDomain.Views.PlaceGetAllView
 
 @{
-    ViewData["Title"] = "People";
+    ViewData["Title"] = "Places";
 }
 
-<h1>People</h1>
+<h1>Places</h1>
 
 <p>
     <a asp-action="Create">Create New</a>
@@ -21,7 +21,7 @@
         </tr>
     </thead>
     <tbody>
-@foreach (var item in Model.People) {
+@foreach (var item in Model.Places) {
         <tr>
             <td>
                 <img src="@item.PictureUrl" alt="@item.Name" style="max-height:50px;max-width:50px"/>
