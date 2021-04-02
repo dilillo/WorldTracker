@@ -1,0 +1,37 @@
+﻿@model WorldTrackerWeb.Models.VisitCreateViewModel
+
+@{
+    ViewData["Title"] = "Create Visit";
+}
+
+<h1>Create Visit</h1>
+
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Create" enctype="multipart/form-data" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="PersonID" class="control-label"></label>
+                <select asp-for="PersonID" asp-items="@Model.People" class="form-control"></select>
+                <span asp-validation-for="PersonID" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="PlaceID" class="control-label"></label>
+                <select asp-for="PlaceID" asp-items="@Model.Places" class="form-control"></select>
+                <span asp-validation-for="PlaceID" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Create" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index" asp-controller="Home">Back to Home</a>
+</div>
+
+@section Scripts {
+
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
