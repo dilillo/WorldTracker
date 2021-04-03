@@ -1,8 +1,6 @@
 using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http.Features;
-using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -34,26 +32,10 @@ namespace WorldTrackerWeb
                    configuration.Bind(nameof(WorldTrackerOptions), settings);
                });
 
-            const int MaxRequestSize = 209715200;
+            services.AddControllersWithViews()
+                .AddSessionStateTempDataProvider();
 
-            services.Configure<IISServerOptions>(options =>
-            {
-                options.MaxRequestBodySize = MaxRequestSize;
-            });
-
-            services.Configure<KestrelServerOptions>(options =>
-            {
-                options.Limits.MaxRequestBodySize = MaxRequestSize; // if don't set default value is: 30 MB
-            });
-
-            services.Configure<FormOptions>(options =>
-            {
-                options.ValueLengthLimit = MaxRequestSize;
-                options.MultipartBodyLengthLimit = MaxRequestSize; // if don't set default value is: 128 MB
-                options.MultipartHeadersLengthLimit = MaxRequestSize;
-            });
-
-            services.AddControllersWithViews();
+            services.AddSession();
 
             services.AddOptions();
 
@@ -64,6 +46,7 @@ namespace WorldTrackerWeb
             services.AddTransient<IDomainViewRepository, DomainViewRepository>();
             services.AddTransient<IPersonGetByIDViewProjector, PersonGetByIDViewProjector>();
             services.AddTransient<IPlaceGetByIDViewProjector, PlaceGetByIDViewProjector>();
+            services.AddTransient<ISummaryViewProjector, SummaryViewProjector>();
             services.AddTransient<IPersonAggregate, PersonAggregate>();
             services.AddTransient<IPlaceAggregate, PlaceAggregate>();
         }
@@ -86,6 +69,8 @@ namespace WorldTrackerWeb
             app.UseStaticFiles();
 
             app.UseRouting();
+
+            app.UseSession();
 
             app.UseEndpoints(endpoints =>
             {

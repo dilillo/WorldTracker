@@ -1,9 +1,9 @@
 ﻿using MediatR;
-using System;
+using WorldTrackerDomain.Views;
 
 namespace WorldTrackerDomain.Commands
 {
-    public class VisitCreateCommand : IRequest
+    public class VisitCreateCommand : IRequest<SummaryView>
     {
         public string PersonID { get; set; }
 

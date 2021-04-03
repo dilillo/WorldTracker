@@ -43,7 +43,6 @@ namespace WorldTrackerWeb.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [RequestFormLimits(MultipartBodyLengthLimit = 209715200)]
         public async Task<ActionResult> Create(PlaceCreateViewModel model)
         {
             if (!ModelState.IsValid)

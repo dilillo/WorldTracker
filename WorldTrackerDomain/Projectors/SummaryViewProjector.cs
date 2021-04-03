@@ -8,7 +8,14 @@ using WorldTrackerDomain.Views;
 
 namespace WorldTrackerDomain.Projectors
 {
-    public class SummaryViewProjector
+    public interface ISummaryViewProjector
+    {
+        Task<SummaryView> Predict(DomainEvent[] events, CancellationToken cancellationToken);
+
+        Task Project(DomainEvent[] events, CancellationToken cancellationToken);
+    }
+
+    public class SummaryViewProjector : ISummaryViewProjector
     {
         private readonly IDomainViewRepository _domainViewRepository;
 
@@ -17,7 +24,76 @@ namespace WorldTrackerDomain.Projectors
             _domainViewRepository = domainViewRepository;
         }
 
+        public async Task<SummaryView> Predict(DomainEvent[] events, CancellationToken cancellationToken)
+        {
+            var summaryEvents = Filter(events);
+
+            var summaryView = await GetView(cancellationToken);
+
+            if (summaryEvents.Count > 0)
+            {
+                Apply(summaryEvents, summaryView);
+            }
+
+            return summaryView;
+        }
+
         public async Task Project(DomainEvent[] events, CancellationToken cancellationToken)
+        {
+            var summaryEvents = Filter(events);
+
+            if (summaryEvents.Count == 0)
+            {
+                return;
+            }
+
+            var summaryView = await GetView(cancellationToken);
+
+            Apply(summaryEvents, summaryView);
+
+            await _domainViewRepository.Save(summaryView, cancellationToken);
+        }
+
+        private static void Apply(List<DomainEvent> summaryEvents, SummaryView summaryView)
+        {
+            foreach (var placeEvent in summaryEvents)
+            {
+                switch (placeEvent)
+                {
+                    case PersonCreatedEvent _:
+
+                        summaryView.People += 1;
+
+                        break;
+
+                    case PersonDeletedEvent _:
+
+                        summaryView.People -= 1;
+
+                        break;
+
+                    case PlaceCreatedEvent _:
+
+                        summaryView.Places += 1;
+
+                        break;
+
+                    case PlaceDeletedEvent _:
+
+                        summaryView.Places -= 1;
+
+                        break;
+
+                    case PlaceVisitedEvent _:
+
+                        summaryView.Visits += 1;
+
+                        break;
+                }
+            }
+        }
+
+        private static List<DomainEvent> Filter(DomainEvent[] events)
         {
             var summaryEvents = new List<DomainEvent>();
 
@@ -30,51 +106,7 @@ namespace WorldTrackerDomain.Projectors
             summaryEvents.AddRange(events.OfType<PersonDeletedEvent>());
 
             summaryEvents.AddRange(events.OfType<PlaceVisitedEvent>());
-
-            if (summaryEvents.Count == 0)
-            {
-                return;
-            }
-
-            var summaryView = await GetView(cancellationToken);
-
-            foreach (var placeEvent in summaryEvents)
-            {
-                switch (placeEvent)
-                {
-                    case PersonCreatedEvent personCreatedEvent:
-
-                        summaryView.People += 1;
-
-                        break;
-
-                    case PersonDeletedEvent personDeletedEvent:
-
-                        summaryView.People -= 1;
-
-                        break;
-
-                    case PlaceCreatedEvent placeCreatedEvent:
-
-                        summaryView.Places += 1;
-
-                        break;
-
-                    case PlaceDeletedEvent placeDeletedEvent:
-
-                        summaryView.Places -= 1;
-
-                        break;
-
-                    case PlaceVisitedEvent placeVisitedEvent:
-
-                        summaryView.Visits += 1;
-
-                        break;
-                }
-            }
-
-            await _domainViewRepository.Save(summaryView, cancellationToken);
+            return summaryEvents;
         }
 
         private async Task<SummaryView> GetView(CancellationToken cancellationToken)

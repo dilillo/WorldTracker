@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -55,7 +56,11 @@ namespace WorldTrackerWeb.Controllers
                     PlaceID = model.PlaceID
                 };
 
-                await _mediator.Send(cmd);
+                var summaryViewPrediction = await _mediator.Send(cmd);
+
+                var serializedSummaryViewPrediction = JsonSerializer.Serialize(summaryViewPrediction);
+
+                TempData.Add("SummaryViewPrediction", serializedSummaryViewPrediction);
 
                 return RedirectToAction("Index", "Home");
             }

@@ -1,8 +1,10 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
+using System.Text.Json;
 using System.Threading.Tasks;
 using WorldTrackerDomain.Queries;
+using WorldTrackerDomain.Views;
 using WorldTrackerWeb.Models;
 
 namespace WorldTrackerWeb.Controllers
@@ -18,7 +20,11 @@ namespace WorldTrackerWeb.Controllers
 
         public async Task<IActionResult> Index()
         {
-            var model = await _mediator.Send(new SummaryQuery());
+            var summaryViewPrediction = TempData["SummaryViewPrediction"] as string;
+
+            var model = string.IsNullOrEmpty(summaryViewPrediction) ? 
+                await _mediator.Send(new SummaryQuery()) : 
+                JsonSerializer.Deserialize<SummaryView>(summaryViewPrediction);
 
             return View(model);
         }
