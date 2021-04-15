@@ -54,42 +54,59 @@ namespace WorldTrackerDomain.Projectors
             await _domainViewRepository.Save(summaryView, cancellationToken);
         }
 
-        private static void Apply(List<DomainEvent> summaryEvents, SummaryView summaryView)
+        private static void Apply(List<DomainEvent> events, SummaryView view)
         {
-            foreach (var placeEvent in summaryEvents)
+            foreach (var @event in events)
             {
-                switch (placeEvent)
+                var aggregateVersion = view.AggregateVersions.FirstOrDefault(i => i.AggregateID == @event.AggregateID);
+
+                if (@event.Version <= aggregateVersion?.Version)
+                {
+                    continue;
+                }
+
+                switch (@event)
                 {
                     case PersonCreatedEvent _:
 
-                        summaryView.People += 1;
+                        view.People += 1;
 
                         break;
 
                     case PersonDeletedEvent _:
 
-                        summaryView.People -= 1;
+                        view.People -= 1;
 
                         break;
 
                     case PlaceCreatedEvent _:
 
-                        summaryView.Places += 1;
+                        view.Places += 1;
 
                         break;
 
                     case PlaceDeletedEvent _:
 
-                        summaryView.Places -= 1;
+                        view.Places -= 1;
 
                         break;
 
                     case PlaceVisitedEvent _:
 
-                        summaryView.Visits += 1;
+                        view.Visits += 1;
 
                         break;
                 }
+
+                if (aggregateVersion == null)
+                {
+                    view.AggregateVersions.Add(new AggregateVersion
+                    {
+                        AggregateID = @event.AggregateID
+                    });
+                }
+
+                aggregateVersion.Version = @event.Version;
             }
         }
 
@@ -106,6 +123,7 @@ namespace WorldTrackerDomain.Projectors
             summaryEvents.AddRange(events.OfType<PersonDeletedEvent>());
 
             summaryEvents.AddRange(events.OfType<PlaceVisitedEvent>());
+
             return summaryEvents;
         }
 
