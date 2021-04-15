@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+﻿using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,7 +8,14 @@ using WorldTrackerDomain.Views;
 
 namespace WorldTrackerDomain.Projectors
 {
-    public class PlaceGetAllViewProjector
+    public interface IPlaceGetAllViewProjector
+    {
+        PlaceGetAllView Predict(PlaceGetAllView domainView, DomainEvent[] domainEvents);
+
+        Task Project(DomainEvent[] domainEvents, CancellationToken cancellationToken);
+    }
+
+    public class PlaceGetAllViewProjector : DomainViewProjector<PlaceGetAllView>, IPlaceGetAllViewProjector
     {
         private readonly IDomainViewRepository _domainViewRepository;
 
@@ -17,81 +24,84 @@ namespace WorldTrackerDomain.Projectors
             _domainViewRepository = domainViewRepository;
         }
 
-        public async Task Project(DomainEvent[] events, CancellationToken cancellationToken)
+        protected override Type[] GetProjectedDomainEventTypes()
         {
-            var placeEvents = new List<DomainEvent>();
+            return new Type[]
+            {
+                typeof(PlaceCreatedEvent),
+                typeof(PlaceUpdatedEvent),
+                typeof(PlaceDeletedEvent)
+            };
+        }
 
-            placeEvents.AddRange(events.OfType<PlaceCreatedEvent>());
+        public PlaceGetAllView Predict(PlaceGetAllView domainView, DomainEvent[] domainEvents)
+        {
+            var projectableDomainEvents = GetProjectableDomainEvents(domainEvents);
 
-            placeEvents.AddRange(events.OfType<PlaceUpdatedEvent>());
+            if (projectableDomainEvents.Count > 0)
+            {
+                ApplyDomainEvents(projectableDomainEvents, domainView);
+            }
 
-            placeEvents.AddRange(events.OfType<PlaceDeletedEvent>());
+            return domainView;
+        }
 
-            if (placeEvents.Count == 0)
+        public async Task Project(DomainEvent[] domainEvents, CancellationToken cancellationToken)
+        {
+            var projectableDomainEvents = GetProjectableDomainEvents(domainEvents);
+
+            if (projectableDomainEvents.Count == 0)
             {
                 return;
             }
 
-            var placeGetAllView = await GetView(cancellationToken);
+            var domainView = await GetDomainView(cancellationToken);
 
-            foreach (var placeEvent in placeEvents)
-            {
-                switch (placeEvent)
-                {
-                    case PlaceCreatedEvent placeCreatedEvent:
+            ApplyDomainEvents(projectableDomainEvents, domainView);
 
-                        AddPlace(placeGetAllView, placeCreatedEvent);
-
-                        break;
-
-                    case PlaceUpdatedEvent placeUpdatedEvent:
-
-                        UpdatePlace(placeGetAllView, placeUpdatedEvent);
-
-                        break;
-
-                    case PlaceDeletedEvent placeDeletedEvent:
-
-                        RemovePlace(placeGetAllView, placeDeletedEvent);
-
-                        break;
-                }
-            }
-
-            await _domainViewRepository.Save(placeGetAllView, cancellationToken);
+            await _domainViewRepository.Save(domainView, cancellationToken);
         }
 
-        private static void RemovePlace(PlaceGetAllView placeGetAllView, PlaceDeletedEvent placeDeletedEvent)
+        protected override void ApplyDomainEvent(PlaceGetAllView domainView, DomainEvent domainEvent)
         {
-            var existingPlaceToDelete = placeGetAllView.Places.FirstOrDefault(i => i.ID == placeDeletedEvent.AggregateID);
-
-            if (existingPlaceToDelete != null)
+            switch (domainEvent)
             {
-                placeGetAllView.Places.Remove(existingPlaceToDelete);
-            }
-        }
+                case PlaceCreatedEvent placeCreatedEvent:
 
-        private static void UpdatePlace(PlaceGetAllView placeGetAllView, PlaceUpdatedEvent placeUpdatedEvent)
-        {
-            var existingPlaceToUpdate = placeGetAllView.Places.FirstOrDefault(i => i.ID == placeUpdatedEvent.AggregateID);
+                    domainView.Places.Add(new PlaceGetAllViewPlace
+                    {
+                        ID = placeCreatedEvent.AggregateID,
+                        Name = placeCreatedEvent.Name,
+                        PictureUrl = placeCreatedEvent.PictureUrl
+                    });
 
-            if (existingPlaceToUpdate != null)
-            {
-                existingPlaceToUpdate.Name = placeUpdatedEvent.Name;
+                    break;
+
+                case PlaceUpdatedEvent placeUpdatedEvent:
+
+                    var existingPlaceToUpdate = domainView.Places.FirstOrDefault(i => i.ID == placeUpdatedEvent.AggregateID);
+
+                    if (existingPlaceToUpdate != null)
+                    {
+                        existingPlaceToUpdate.Name = placeUpdatedEvent.Name;
+                    }
+
+                    break;
+
+                case PlaceDeletedEvent placeDeletedEvent:
+
+                    var existingPlaceToDelete = domainView.Places.FirstOrDefault(i => i.ID == placeDeletedEvent.AggregateID);
+
+                    if (existingPlaceToDelete != null)
+                    {
+                        domainView.Places.Remove(existingPlaceToDelete);
+                    }
+
+                    break;
             }
         }
 
-        private static void AddPlace(PlaceGetAllView placeGetAllView, PlaceCreatedEvent placeCreatedEvent)
-        {
-            placeGetAllView.Places.Add(new PlaceGetAllViewPlace
-            {
-                ID = placeCreatedEvent.AggregateID,
-                Name = placeCreatedEvent.Name,
-                PictureUrl = placeCreatedEvent.PictureUrl
-            });
-        }
-
-        private async Task<PlaceGetAllView> GetView(CancellationToken cancellationToken)
+        private async Task<PlaceGetAllView> GetDomainView(CancellationToken cancellationToken)
         {
             var placeGetAllView = (await _domainViewRepository.GetByID(DomainViewIDs.PlaceGetAll, cancellationToken)) as PlaceGetAllView;
 

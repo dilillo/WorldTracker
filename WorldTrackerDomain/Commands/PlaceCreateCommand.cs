@@ -1,8 +1,9 @@
 ﻿using MediatR;
+using WorldTrackerDomain.Events;
 
 namespace WorldTrackerDomain.Commands
 {
-    public class PlaceCreateCommand : IRequest
+    public class PlaceCreateCommand : IRequest<DomainEvent[]>
     {
         public string ID { get; set; }
 

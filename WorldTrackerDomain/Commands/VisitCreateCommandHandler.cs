@@ -1,34 +1,27 @@
-﻿using System.Threading;
+﻿using MediatR;
+using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
 using WorldTrackerDomain.Aggregates;
-using WorldTrackerDomain.Projectors;
-using WorldTrackerDomain.Views;
+using WorldTrackerDomain.Events;
 
 namespace WorldTrackerDomain.Commands
 {
-    public class VisitCreateCommandHandler : IRequestHandler<VisitCreateCommand, SummaryView>
+    public class VisitCreateCommandHandler : IRequestHandler<VisitCreateCommand, DomainEvent[]>
     {
         private readonly IPlaceAggregate _placeAggregate;
-        private readonly ISummaryViewProjector _summaryViewProjector;
 
-        public VisitCreateCommandHandler(IPlaceAggregate placeAggregate, ISummaryViewProjector summaryViewProjector)
+        public VisitCreateCommandHandler(IPlaceAggregate placeAggregate)
         {
             _placeAggregate = placeAggregate;
-            _summaryViewProjector = summaryViewProjector;
         }
 
-        public async Task<SummaryView> Handle(VisitCreateCommand request, CancellationToken cancellationToken)
+        public async Task<DomainEvent[]> Handle(VisitCreateCommand request, CancellationToken cancellationToken)
         {
             await _placeAggregate.Load(request.PlaceID, cancellationToken);
 
             await _placeAggregate.Visit(request.PersonID, cancellationToken);
 
-            var events = await _placeAggregate.SaveChanges(cancellationToken);
-
-            var summaryViewPrediction = await _summaryViewProjector.Predict(events, cancellationToken);
-
-            return summaryViewPrediction;
+            return await _placeAggregate.SaveChanges(cancellationToken);
         }
     }
 }

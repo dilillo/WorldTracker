@@ -56,11 +56,11 @@ namespace WorldTrackerWeb.Controllers
                     PlaceID = model.PlaceID
                 };
 
-                var summaryViewPrediction = await _mediator.Send(cmd);
+                var events = await _mediator.Send(cmd);
 
-                var serializedSummaryViewPrediction = JsonSerializer.Serialize(summaryViewPrediction);
+                var serializedPendingDomainEvents = JsonSerializer.Serialize(events);
 
-                TempData.Add("SummaryViewPrediction", serializedSummaryViewPrediction);
+                TempData.Add("PendingDomainEvents", serializedPendingDomainEvents);
 
                 return RedirectToAction("Index", "Home");
             }

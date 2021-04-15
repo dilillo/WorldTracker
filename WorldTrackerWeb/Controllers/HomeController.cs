@@ -3,8 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 using System.Text.Json;
 using System.Threading.Tasks;
+using WorldTrackerDomain.Events;
 using WorldTrackerDomain.Queries;
-using WorldTrackerDomain.Views;
 using WorldTrackerWeb.Models;
 
 namespace WorldTrackerWeb.Controllers
@@ -20,11 +20,12 @@ namespace WorldTrackerWeb.Controllers
 
         public async Task<IActionResult> Index()
         {
-            var summaryViewPrediction = TempData["SummaryViewPrediction"] as string;
+            var pendingDomainEvents = TempData["PendingDomainEvents"] as string;
 
-            var model = string.IsNullOrEmpty(summaryViewPrediction) ? 
-                await _mediator.Send(new SummaryQuery()) : 
-                JsonSerializer.Deserialize<SummaryView>(summaryViewPrediction);
+            var model = await _mediator.Send(new SummaryQuery 
+            { 
+                PendingDomainEvents = string.IsNullOrEmpty(pendingDomainEvents) ? null : JsonSerializer.Deserialize<DomainEvent[]>(pendingDomainEvents)
+            });
 
             return View(model);
         }

@@ -23,5 +23,6 @@ namespace WorldTrackerDomain.Views
         public string Name { get; set; }
 
         public string PictureUrl { get; set; }
+        public bool IsDeleted { get; internal set; }
     }
 }

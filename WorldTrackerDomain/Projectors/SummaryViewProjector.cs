@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
 using WorldTrackerDomain.Events;
@@ -10,12 +9,12 @@ namespace WorldTrackerDomain.Projectors
 {
     public interface ISummaryViewProjector
     {
-        Task<SummaryView> Predict(DomainEvent[] events, CancellationToken cancellationToken);
+        SummaryView Predict(SummaryView domainView, DomainEvent[] domainEvents);
 
-        Task Project(DomainEvent[] events, CancellationToken cancellationToken);
+        Task Project(DomainEvent[] domainEvents, CancellationToken cancellationToken);
     }
 
-    public class SummaryViewProjector : ISummaryViewProjector
+    public class SummaryViewProjector : DomainViewProjector<SummaryView>, ISummaryViewProjector
     {
         private readonly IDomainViewRepository _domainViewRepository;
 
@@ -24,114 +23,87 @@ namespace WorldTrackerDomain.Projectors
             _domainViewRepository = domainViewRepository;
         }
 
-        public async Task<SummaryView> Predict(DomainEvent[] events, CancellationToken cancellationToken)
+        protected override Type[] GetProjectedDomainEventTypes()
         {
-            var summaryEvents = Filter(events);
-
-            var summaryView = await GetView(cancellationToken);
-
-            if (summaryEvents.Count > 0)
+            return new Type[]
             {
-                Apply(summaryEvents, summaryView);
-            }
-
-            return summaryView;
+                typeof(PlaceCreatedEvent),
+                typeof(PlaceDeletedEvent),
+                typeof(PersonCreatedEvent),
+                typeof(PersonDeletedEvent),
+                typeof(PlaceVisitedEvent),
+            };
         }
 
-        public async Task Project(DomainEvent[] events, CancellationToken cancellationToken)
+        public SummaryView Predict(SummaryView domainView, DomainEvent[] domainEvents)
         {
-            var summaryEvents = Filter(events);
+            var projectableDomainEvents = GetProjectableDomainEvents(domainEvents);
 
-            if (summaryEvents.Count == 0)
+            if (projectableDomainEvents.Count > 0)
+            {
+                ApplyDomainEvents(projectableDomainEvents, domainView);
+            }
+
+            return domainView;
+        }
+
+        public async Task Project(DomainEvent[] domainEvents, CancellationToken cancellationToken)
+        {
+            var projectableDomainEvents = GetProjectableDomainEvents(domainEvents);
+
+            if (projectableDomainEvents.Count == 0)
             {
                 return;
             }
 
-            var summaryView = await GetView(cancellationToken);
+            var domainView = await GetDomainView(cancellationToken);
 
-            Apply(summaryEvents, summaryView);
+            ApplyDomainEvents(projectableDomainEvents, domainView);
 
-            await _domainViewRepository.Save(summaryView, cancellationToken);
+            await _domainViewRepository.Save(domainView, cancellationToken);
         }
 
-        private static void Apply(List<DomainEvent> events, SummaryView view)
+        protected override void ApplyDomainEvent(SummaryView domainView, DomainEvent domainEvent)
         {
-            foreach (var @event in events)
+            switch (domainEvent)
             {
-                var aggregateVersion = view.AggregateVersions.FirstOrDefault(i => i.AggregateID == @event.AggregateID);
+                case PersonCreatedEvent _:
 
-                if (@event.Version <= aggregateVersion?.Version)
-                {
-                    continue;
-                }
+                    domainView.People += 1;
 
-                switch (@event)
-                {
-                    case PersonCreatedEvent _:
+                    break;
 
-                        view.People += 1;
+                case PersonDeletedEvent _:
 
-                        break;
+                    domainView.People -= 1;
 
-                    case PersonDeletedEvent _:
+                    break;
 
-                        view.People -= 1;
+                case PlaceCreatedEvent _:
 
-                        break;
+                    domainView.Places += 1;
 
-                    case PlaceCreatedEvent _:
+                    break;
 
-                        view.Places += 1;
+                case PlaceDeletedEvent _:
 
-                        break;
+                    domainView.Places -= 1;
 
-                    case PlaceDeletedEvent _:
+                    break;
 
-                        view.Places -= 1;
+                case PlaceVisitedEvent _:
 
-                        break;
+                    domainView.Visits += 1;
 
-                    case PlaceVisitedEvent _:
-
-                        view.Visits += 1;
-
-                        break;
-                }
-
-                if (aggregateVersion == null)
-                {
-                    view.AggregateVersions.Add(new AggregateVersion
-                    {
-                        AggregateID = @event.AggregateID
-                    });
-                }
-
-                aggregateVersion.Version = @event.Version;
+                    break;
             }
         }
 
-        private static List<DomainEvent> Filter(DomainEvent[] events)
+        private async Task<SummaryView> GetDomainView(CancellationToken cancellationToken)
         {
-            var summaryEvents = new List<DomainEvent>();
+            var doimainView = (await _domainViewRepository.GetByID(DomainViewIDs.Summary, cancellationToken)) as SummaryView;
 
-            summaryEvents.AddRange(events.OfType<PlaceCreatedEvent>());
-
-            summaryEvents.AddRange(events.OfType<PlaceDeletedEvent>());
-
-            summaryEvents.AddRange(events.OfType<PersonCreatedEvent>());
-
-            summaryEvents.AddRange(events.OfType<PersonDeletedEvent>());
-
-            summaryEvents.AddRange(events.OfType<PlaceVisitedEvent>());
-
-            return summaryEvents;
-        }
-
-        private async Task<SummaryView> GetView(CancellationToken cancellationToken)
-        {
-            var summaryView = (await _domainViewRepository.GetByID(DomainViewIDs.Summary, cancellationToken)) as SummaryView;
-
-            return summaryView ?? new SummaryView();
+            return doimainView ?? new SummaryView();
         }
     }
 }

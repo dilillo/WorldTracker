@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+﻿using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,10 +10,12 @@ namespace WorldTrackerDomain.Projectors
 {
     public interface IPlaceGetByIDViewProjector
     {
+        PlaceGetByIDView Predict(PlaceGetByIDView domainView, DomainEvent[] domainEvents);
+
         Task Project(DomainEvent[] events, CancellationToken cancellationToken);
     }
 
-    public class PlaceGetByIDViewProjector : IPlaceGetByIDViewProjector
+    public class PlaceGetByIDViewProjector : DomainViewProjector<PlaceGetByIDView>, IPlaceGetByIDViewProjector
     {
         private readonly IDomainViewRepository _domainViewRepository;
 
@@ -22,86 +24,83 @@ namespace WorldTrackerDomain.Projectors
             _domainViewRepository = domainViewRepository;
         }
 
-        public async Task Project(DomainEvent[] events, CancellationToken cancellationToken)
+        protected override Type[] GetProjectedDomainEventTypes()
         {
-            var placeEvents = new List<DomainEvent>();
+            return new Type[]
+            {
+                typeof(PlaceCreatedEvent),
+                typeof(PlaceUpdatedEvent),
+                typeof(PlaceDeletedEvent),
+            };
+        }
 
-            placeEvents.AddRange(events.OfType<PlaceCreatedEvent>());
+        public PlaceGetByIDView Predict(PlaceGetByIDView domainView, DomainEvent[] domainEvents)
+        {
+            var projectableDomainEvents = GetProjectableDomainEvents(domainEvents);
 
-            placeEvents.AddRange(events.OfType<PlaceUpdatedEvent>());
+            if (projectableDomainEvents.Count > 0)
+            {
+                ApplyDomainEvents(projectableDomainEvents, domainView);
+            }
 
-            placeEvents.AddRange(events.OfType<PlaceDeletedEvent>());
+            return domainView;
+        }
 
-            if (placeEvents.Count == 0)
+        public async Task Project(DomainEvent[] domainEvents, CancellationToken cancellationToken)
+        {
+            var projectableDomainEvents = GetProjectableDomainEvents(domainEvents);
+
+            if (projectableDomainEvents.Count == 0)
             {
                 return;
             }
 
-            foreach (var placeEvent in placeEvents)
+            var aggregateEventGroups = domainEvents.GroupBy(i => i.AggregateID);
+
+            foreach (var aggregateEventGroup in aggregateEventGroups)
             {
-                switch (placeEvent)
-                {
-                    case PlaceCreatedEvent placeCreatedEvent:
+                var domainView = await GetDomainView(aggregateEventGroup.Key, cancellationToken);
 
-                        await CreatePlace(placeCreatedEvent, cancellationToken);
+                ApplyDomainEvents(projectableDomainEvents, domainView);
 
-                        break;
-
-                    case PlaceUpdatedEvent placeUpdatedEvent:
-
-                        await UpdatePlace(placeUpdatedEvent, cancellationToken);
-
-                        break;
-
-                    case PlaceDeletedEvent placeDeletedEvent:
-
-                        await DeletePlace(placeDeletedEvent, cancellationToken);
-
-                        break;
-                }
+                await _domainViewRepository.Save(domainView, cancellationToken);
             }
         }
 
-        private async Task DeletePlace(PlaceDeletedEvent placeDeletedEvent, CancellationToken cancellationToken)
+        protected override void ApplyDomainEvent(PlaceGetByIDView domainView, DomainEvent domainEvent)
         {
-            var placeGetByIDView = await GetView(placeDeletedEvent.AggregateID, cancellationToken);
-
-            if (placeGetByIDView != null)
+            switch (domainEvent)
             {
-                await _domainViewRepository.Delete(placeGetByIDView, cancellationToken);
+                case PlaceCreatedEvent placeCreatedEvent:
+
+                    domainView.Place = new PlaceGetByIDViewPlace
+                    {
+                        ID = placeCreatedEvent.AggregateID,
+                        Name = placeCreatedEvent.Name,
+                        PictureUrl = placeCreatedEvent.PictureUrl
+                    };
+
+                    break;
+
+                case PlaceUpdatedEvent placeUpdatedEvent:
+
+                    domainView.Place.Name = placeUpdatedEvent.Name;
+
+                    break;
+
+                case PlaceDeletedEvent _:
+
+                    domainView.Place.IsDeleted = true;
+
+                    break;
             }
         }
 
-        private async Task UpdatePlace(PlaceUpdatedEvent placeUpdatedEvent, CancellationToken cancellationToken)
+        private async Task<PlaceGetByIDView> GetDomainView(string aggregateID, CancellationToken cancellationToken)
         {
-            var placeGetByIDView = await GetView(placeUpdatedEvent.AggregateID, cancellationToken);
+            var doimainView = (await _domainViewRepository.GetByID(DomainViewIDs.PlaceGetByID(aggregateID), cancellationToken)) as PlaceGetByIDView;
 
-            if (placeGetByIDView != null)
-            {
-                placeGetByIDView.Place.Name = placeUpdatedEvent.Name;
-            }
-
-            await _domainViewRepository.Save(placeGetByIDView, cancellationToken);
-        }
-
-        private async Task CreatePlace(PlaceCreatedEvent placeCreatedEvent, CancellationToken cancellationToken)
-        {
-            var placeGetByIDView = new PlaceGetByIDView(placeCreatedEvent.AggregateID)
-            {
-                Place = new PlaceGetByIDViewPlace
-                {
-                    ID = placeCreatedEvent.AggregateID,
-                    Name = placeCreatedEvent.Name,
-                    PictureUrl = placeCreatedEvent.PictureUrl
-                }
-            };
-
-            await _domainViewRepository.Save(placeGetByIDView, cancellationToken);
-        }
-
-        private async Task<PlaceGetByIDView> GetView(string placeID, CancellationToken cancellationToken)
-        {
-            return (await _domainViewRepository.GetByID(DomainViewIDs.PlaceGetByID(placeID), cancellationToken)) as PlaceGetByIDView;
+            return doimainView ?? new PlaceGetByIDView(aggregateID);
         }
     }
 }

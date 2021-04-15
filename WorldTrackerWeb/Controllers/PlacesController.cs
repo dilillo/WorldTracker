@@ -1,8 +1,10 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Text.Json;
 using System.Threading.Tasks;
 using WorldTrackerDomain.Commands;
+using WorldTrackerDomain.Events;
 using WorldTrackerDomain.Queries;
 using WorldTrackerWeb.Components;
 using WorldTrackerWeb.Models;
@@ -22,7 +24,12 @@ namespace WorldTrackerWeb.Controllers
 
         public async Task<ActionResult> Index()
         {
-            var model = await _mediator.Send(new PlaceGetAllQuery());
+            var pendingDomainEvents = TempData["PendingDomainEvents"] as string;
+
+            var model = await _mediator.Send(new PlaceGetAllQuery
+            {
+                PendingDomainEvents = string.IsNullOrEmpty(pendingDomainEvents) ? null : JsonSerializer.Deserialize<DomainEvent[]>(pendingDomainEvents)
+            });
 
             return View(model);
         }
@@ -60,7 +67,11 @@ namespace WorldTrackerWeb.Controllers
 
                 cmd.PictureUrl = await _blobUploader.UploadPlacePicture(model.Picture);
 
-                await _mediator.Send(cmd);
+                var events = await _mediator.Send(cmd);
+
+                var serializedPendingDomainEvents = JsonSerializer.Serialize(events);
+
+                TempData.Add("PendingDomainEvents", serializedPendingDomainEvents);
 
                 return RedirectToAction("Details", "Places", new { id = cmd.ID });
             }
@@ -107,7 +118,11 @@ namespace WorldTrackerWeb.Controllers
                     Name = model.Name
                 };
 
-                await _mediator.Send(cmd);
+                var events = await _mediator.Send(cmd);
+
+                var serializedPendingDomainEvents = JsonSerializer.Serialize(events);
+
+                TempData.Add("PendingDomainEvents", serializedPendingDomainEvents);
 
                 return RedirectToAction("Details", "Places", new { id = cmd.ID });
             }
@@ -137,7 +152,11 @@ namespace WorldTrackerWeb.Controllers
                     ID = id
                 };
 
-                await _mediator.Send(cmd);
+                var events = await _mediator.Send(cmd);
+
+                var serializedPendingDomainEvents = JsonSerializer.Serialize(events);
+
+                TempData.Add("PendingDomainEvents", serializedPendingDomainEvents);
 
                 return RedirectToAction(nameof(Index));
             }

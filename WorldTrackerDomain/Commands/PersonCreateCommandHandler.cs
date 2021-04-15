@@ -2,11 +2,12 @@
 using System.Threading;
 using System.Threading.Tasks;
 using WorldTrackerDomain.Aggregates;
+using WorldTrackerDomain.Events;
 using WorldTrackerDomain.Projectors;
 
 namespace WorldTrackerDomain.Commands
 {
-    public class PersonCreateCommandHandler : IRequestHandler<PersonCreateCommand>
+    public class PersonCreateCommandHandler : IRequestHandler<PersonCreateCommand, DomainEvent[]>
     {
         private readonly IPersonAggregate _personAggregate;
         private readonly IPersonGetByIDViewProjector _personGetByIDViewProjector;
@@ -17,7 +18,7 @@ namespace WorldTrackerDomain.Commands
             _personGetByIDViewProjector = personGetByIDViewProjector;
         }
 
-        public async Task<Unit> Handle(PersonCreateCommand request, CancellationToken cancellationToken)
+        public async Task<DomainEvent[]> Handle(PersonCreateCommand request, CancellationToken cancellationToken)
         {
             await _personAggregate.Load(request.ID, cancellationToken);
 
@@ -27,7 +28,7 @@ namespace WorldTrackerDomain.Commands
 
             await _personGetByIDViewProjector.Project(events, cancellationToken);
 
-            return Unit.Value;
+            return events;
         }
     }
 }

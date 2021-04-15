@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+﻿using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,7 +8,14 @@ using WorldTrackerDomain.Views;
 
 namespace WorldTrackerDomain.Projectors
 {
-    public class PersonGetAllViewProjector
+    public interface IPersonGetAllViewProjector
+    {
+        PersonGetAllView Predict(PersonGetAllView domainView, DomainEvent[] domainEvents);
+
+        Task Project(DomainEvent[] domainEvents, CancellationToken cancellationToken);
+    }
+
+    public class PersonGetAllViewProjector : DomainViewProjector<PersonGetAllView>, IPersonGetAllViewProjector
     {
         private readonly IDomainViewRepository _domainViewRepository;
 
@@ -17,81 +24,83 @@ namespace WorldTrackerDomain.Projectors
             _domainViewRepository = domainViewRepository;
         }
 
-        public async Task Project(DomainEvent[] events, CancellationToken cancellationToken)
+        protected override Type[] GetProjectedDomainEventTypes()
         {
-            var personEvents = new List<DomainEvent>();
+            return new Type[]
+            {
+                typeof(PersonCreatedEvent),
+                typeof(PersonUpdatedEvent),
+                typeof(PersonDeletedEvent)
+            };
+        }
+        public PersonGetAllView Predict(PersonGetAllView domainView, DomainEvent[] domainEvents)
+        {
+            var projectableDomainEvents = GetProjectableDomainEvents(domainEvents);
 
-            personEvents.AddRange(events.OfType<PersonCreatedEvent>());
+            if (projectableDomainEvents.Count > 0)
+            {
+                ApplyDomainEvents(projectableDomainEvents, domainView);
+            }
 
-            personEvents.AddRange(events.OfType<PersonUpdatedEvent>());
+            return domainView;
+        }
 
-            personEvents.AddRange(events.OfType<PersonDeletedEvent>());
+        public async Task Project(DomainEvent[] domainEvents, CancellationToken cancellationToken)
+        {
+            var projectableDomainEvents = GetProjectableDomainEvents(domainEvents);
 
-            if (personEvents.Count == 0)
+            if (projectableDomainEvents.Count == 0)
             {
                 return;
             }
 
-            var personGetAllView = await GetView(cancellationToken);
+            var domainView = await GetDomainView(cancellationToken);
 
-            foreach (var personEvent in personEvents)
-            {
-                switch (personEvent)
-                {
-                    case PersonCreatedEvent personCreatedEvent:
+            ApplyDomainEvents(projectableDomainEvents, domainView);
 
-                        AddPerson(personGetAllView, personCreatedEvent);
-
-                        break;
-
-                    case PersonUpdatedEvent personUpdatedEvent:
-
-                        UpdatePerson(personGetAllView, personUpdatedEvent);
-
-                        break;
-
-                    case PersonDeletedEvent personDeletedEvent:
-
-                        RemovePerson(personGetAllView, personDeletedEvent);
-
-                        break;
-                }
-            }
-
-            await _domainViewRepository.Save(personGetAllView, cancellationToken);
+            await _domainViewRepository.Save(domainView, cancellationToken);
         }
 
-        private static void RemovePerson(PersonGetAllView personGetAllView, PersonDeletedEvent personDeletedEvent)
+        protected override void ApplyDomainEvent(PersonGetAllView domainView, DomainEvent domainEvent)
         {
-            var existingPersonToDelete = personGetAllView.People.FirstOrDefault(i => i.ID == personDeletedEvent.AggregateID);
-
-            if (existingPersonToDelete != null)
+            switch (domainEvent)
             {
-                personGetAllView.People.Remove(existingPersonToDelete);
-            }
-        }
+                case PersonCreatedEvent personCreatedEvent:
 
-        private static void UpdatePerson(PersonGetAllView personGetAllView, PersonUpdatedEvent personUpdatedEvent)
-        {
-            var existingPersonToUpdate = personGetAllView.People.FirstOrDefault(i => i.ID == personUpdatedEvent.AggregateID);
+                    domainView.People.Add(new PersonGetAllViewPerson
+                    {
+                        ID = personCreatedEvent.AggregateID,
+                        Name = personCreatedEvent.Name,
+                        PictureUrl = personCreatedEvent.PictureUrl
+                    });
 
-            if (existingPersonToUpdate != null)
-            {
-                existingPersonToUpdate.Name = personUpdatedEvent.Name;
+                    break;
+
+                case PersonUpdatedEvent personUpdatedEvent:
+
+                    var existingPersonToUpdate = domainView.People.FirstOrDefault(i => i.ID == personUpdatedEvent.AggregateID);
+
+                    if (existingPersonToUpdate != null)
+                    {
+                        existingPersonToUpdate.Name = personUpdatedEvent.Name;
+                    }
+
+                    break;
+
+                case PersonDeletedEvent personDeletedEvent:
+
+                    var existingPersonToDelete = domainView.People.FirstOrDefault(i => i.ID == personDeletedEvent.AggregateID);
+
+                    if (existingPersonToDelete != null)
+                    {
+                        domainView.People.Remove(existingPersonToDelete);
+                    }
+
+                    break;
             }
         }
 
-        private static void AddPerson(PersonGetAllView personGetAllView, PersonCreatedEvent personCreatedEvent)
-        {
-            personGetAllView.People.Add(new PersonGetAllViewPerson
-            {
-                ID = personCreatedEvent.AggregateID,
-                Name = personCreatedEvent.Name,
-                PictureUrl = personCreatedEvent.PictureUrl
-            });
-        }
-
-        private async Task<PersonGetAllView> GetView(CancellationToken cancellationToken)
+        private async Task<PersonGetAllView> GetDomainView(CancellationToken cancellationToken)
         {
             var personGetAllView = (await _domainViewRepository.GetByID(DomainViewIDs.PersonGetAll, cancellationToken)) as PersonGetAllView;
 
