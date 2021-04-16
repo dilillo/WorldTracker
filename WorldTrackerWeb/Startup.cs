@@ -47,6 +47,8 @@ namespace WorldTrackerWeb
             services.AddTransient<IPersonGetByIDViewProjector, PersonGetByIDViewProjector>();
             services.AddTransient<IPlaceGetByIDViewProjector, PlaceGetByIDViewProjector>();
             services.AddTransient<ISummaryViewProjector, SummaryViewProjector>();
+            services.AddTransient<IPlaceGetAllViewProjector, PlaceGetAllViewProjector>();
+            services.AddTransient<IPersonGetAllViewProjector, PersonGetAllViewProjector>();
             services.AddTransient<IPersonAggregate, PersonAggregate>();
             services.AddTransient<IPlaceAggregate, PlaceAggregate>();
         }

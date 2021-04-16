@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -20,12 +21,18 @@ namespace WorldTrackerWeb.Controllers
 
         public async Task<IActionResult> Index()
         {
-            var pendingDomainEvents = TempData["PendingDomainEvents"] as string;
+            var query = new SummaryQuery();
 
-            var model = await _mediator.Send(new SummaryQuery 
-            { 
-                PendingDomainEvents = string.IsNullOrEmpty(pendingDomainEvents) ? null : JsonSerializer.Deserialize<DomainEvent[]>(pendingDomainEvents)
-            });
+            var pendingDomainEventsSerialized = TempData["PendingDomainEvents"] as string;
+
+            if (!string.IsNullOrEmpty(pendingDomainEventsSerialized))
+            {
+                var settings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All };
+
+                query.PendingDomainEvents = JsonConvert.DeserializeObject<DomainEvent[]>(pendingDomainEventsSerialized, settings);
+            }
+
+            var model = await _mediator.Send(query);
 
             return View(model);
         }

@@ -20,7 +20,7 @@ namespace WorldTrackerDomain.Repositories
     public class DomainViewRepository : IDomainViewRepository
     {
         private const string ContainerID = "views";
-        private const string CatabaseID = "worldtracker";
+        private const string DatabaseID = "worldtracker";
 
         protected string _connectionString;
 
@@ -37,7 +37,7 @@ namespace WorldTrackerDomain.Repositories
         {
             using (var client = new CosmosClient(_connectionString))
             {
-                var container = client.GetContainer(CatabaseID, ContainerID);
+                var container = client.GetContainer(DatabaseID, ContainerID);
 
                 var sqlQueryText =
                     "SELECT * FROM views v " +
@@ -64,7 +64,7 @@ namespace WorldTrackerDomain.Repositories
         {
             using (var client = new CosmosClient(_connectionString))
             {
-                var container = client.GetContainer(CatabaseID, ContainerID);
+                var container = client.GetContainer(DatabaseID, ContainerID);
 
                 var wrappedView = new DomainViewWrapper(view);
 
@@ -78,7 +78,7 @@ namespace WorldTrackerDomain.Repositories
         {
             using (var client = new CosmosClient(_connectionString))
             {
-                var container = client.GetContainer(CatabaseID, ContainerID);
+                var container = client.GetContainer(DatabaseID, ContainerID);
 
                 var wrappedView = new DomainViewWrapper(view);
 

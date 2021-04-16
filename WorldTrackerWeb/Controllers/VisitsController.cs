@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Newtonsoft.Json;
 using WorldTrackerDomain.Commands;
 using WorldTrackerDomain.Queries;
 using WorldTrackerWeb.Models;
@@ -58,7 +59,8 @@ namespace WorldTrackerWeb.Controllers
 
                 var events = await _mediator.Send(cmd);
 
-                var serializedPendingDomainEvents = JsonSerializer.Serialize(events);
+                var settings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All };
+                var serializedPendingDomainEvents = JsonConvert.SerializeObject(events, settings);
 
                 TempData.Add("PendingDomainEvents", serializedPendingDomainEvents);
 

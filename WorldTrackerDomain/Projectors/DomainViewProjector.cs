@@ -38,7 +38,7 @@ namespace WorldTrackerDomain.Projectors
         {
             var aggregateVersion = domainView.AggregateVersions.FirstOrDefault(i => i.AggregateID == @event.AggregateID);
 
-            return @event.Version > aggregateVersion?.Version;
+            return aggregateVersion == null || @event.Version > aggregateVersion?.Version;
         }
 
         private void DomainEventApplied(TViewType domainView, DomainEvent @event)
@@ -47,10 +47,12 @@ namespace WorldTrackerDomain.Projectors
 
             if (aggregateVersion == null)
             {
-                domainView.AggregateVersions.Add(new AggregateVersion
+                aggregateVersion = new AggregateVersion
                 {
                     AggregateID = @event.AggregateID
-                });
+                };
+
+                domainView.AggregateVersions.Add(aggregateVersion);
             }
 
             aggregateVersion.Version = @event.Version;
